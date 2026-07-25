@@ -2,52 +2,43 @@
 
 **Author:** Ntokozo Mngomeni — final-year BSc Computer Science student, University of Limpopo. Aspiring SOC analyst.
 
-> This is a learning exercise, not a live engagement. Metasploitable2 is Rapid7's official, publicly-distributed intentionally-vulnerable training VM, run entirely inside my own isolated home lab (VirtualBox, no internet exposure). No real system or third party is involved.
+Quick note before anything else: Metasploitable2 is Rapid7's official, publicly released training VM — it's *meant* to be scanned and broken. This isn't a real target, and I ran the whole thing inside my own isolated home lab with no internet exposure.
 
-## Overview
+## What I did
 
-Built a small home lab (Kali Linux + Metasploitable2, both isolated on a VirtualBox NAT Network) to practice full-port service enumeration and to build the habit of recognizing well-known vulnerable service versions on sight — a core skill for a SOC analyst reviewing asset/vulnerability scan output.
+I set up Kali Linux and Metasploitable2 as two VirtualBox VMs on the same isolated NAT network (`10.0.0.0/24`), then ran a full port scan against the target to see everything that was open, not just the common ports. The point wasn't really to hack anything — it was to build the habit of looking at a service name and version and immediately knowing "that's bad" without having to Google every single one.
 
-## Lab setup
-
-- **Attacker machine:** Kali Linux (VirtualBox VM)
-- **Target machine:** Metasploitable2 (VirtualBox VM), official Rapid7 image
-- Both VMs attached to the same isolated **NAT Network** (`10.0.0.0/24`), with no bridge to the host's real network or the internet
-- Target IP for this scan: `10.0.0.5`
-
-## Scan performed
+## The scan
 
 ```
 nmap -sV -p- -Pn 10.0.0.5
 ```
 
-- `-sV` — detect service name and version on each open port
-- `-p-` — scan the full 65,535 port range, not just common ports
-- `-Pn` — skip host-discovery ping (some VMs don't reliably respond to ICMP inside a NAT network, even when fully up)
+- `-sV` grabs the service name/version on each port
+- `-p-` scans all 65,535 ports instead of just the common ones
+- `-Pn` skips the host-alive ping check — some VMs on a NAT network don't reliably answer ICMP even when they're fully up, so this avoids a false "host down" result
 
-## Key findings
+Target was `10.0.0.5`, and it came back with 29 open ports. Full raw output is in [`nmap-scan-output.txt`](./nmap-scan-output.txt).
 
-29 open ports total. The standouts, with why each one matters:
+## What stood out
 
-| Port | Service | Why it's significant |
-|---|---|---|
-| 21 | vsftpd 2.3.4 | Famous supply-chain backdoor (CVE-2011-2523) — an attacker compromised the source distribution years ago and planted a backdoor triggered by a specific login string. One of the most-cited teaching examples in offensive security. |
-| 1524 | "Metasploitable root shell" | Nmap's own service fingerprint flags this as a bind shell with **no authentication** — a deliberately planted backdoor for training. |
-| 23 | Telnet | Transmits all data, including credentials, in plaintext. Considered obsolete by modern standards for exactly this reason. |
-| 6667/6697 | UnrealIRCd | Another known backdoored version (CVE-2010-2075) — a classic teaching vulnerability alongside vsftpd. |
-| 139/445 | Samba (SMB, 3.x-4.x) | Old SMB implementations have a long history of remote code execution CVEs; this version family is commonly used to teach SMB-based attack paths. |
-| 3306 | MySQL 5.0.51a | Ancient version with known authentication-bypass and privilege-escalation issues. |
-| 8180 | Apache Tomcat / Coyote | Old Tomcat installs are commonly vulnerable to default-credential and malicious-WAR-deployment attacks. |
-| 512/513/514 | rexec/rlogin/rsh ("r-services") | Legacy remote-login protocols predating modern authentication standards — essentially no real access control by today's expectations. |
+A few of these I already half-recognized, others I had to look up — either way, here's what I found and why it matters:
 
-Full raw scan output is in [`nmap-scan-output.txt`](./nmap-scan-output.txt).
+- **Port 21 — vsftpd 2.3.4.** This one's famous. Years ago someone compromised the actual source distribution of this FTP server and planted a backdoor that triggers on a specific login string. It's one of the most commonly cited examples in offensive security training for exactly that reason.
+- **Port 1524 — flagged by nmap as "Metasploitable root shell."** This is a deliberately planted bind shell with no authentication at all, built into the training VM on purpose.
+- **Port 23 — Telnet.** Sends everything, including passwords, in plain text. There's basically no reason to run this today.
+- **Ports 6667/6697 — UnrealIRCd.** Another version with a known backdoor (CVE-2010-2075), usually taught right alongside the vsftpd one.
+- **Ports 139/445 — Samba (SMB, 3.x-4.x).** Old SMB versions have a long track record of remote code execution bugs, so this is commonly used to teach SMB attack paths.
+- **Port 3306 — MySQL 5.0.51a.** Very old, with known authentication bypass and privilege escalation issues.
+- **Port 8180 — Apache Tomcat.** Old Tomcat setups are often vulnerable to default credentials or malicious WAR file deployment.
+- **Ports 512/513/514 — rexec/rlogin/rsh.** Legacy remote login protocols from before modern authentication existed — basically no real access control by today's standards.
 
-## Why this matters for defensive/SOC work
+## Why I think this matters for SOC work
 
-A SOC analyst rarely needs to *exploit* these — the actual job is usually **recognizing the version number in an asset inventory or vulnerability scanner report and immediately understanding the severity**, without needing to look every CVE up from scratch. Building the pattern-recognition of "vsftpd 2.3.4 = critical, patch/replace immediately" is exactly the kind of fast triage judgment this exercise was meant to build.
+I don't think the day-to-day job is usually about exploiting these — it's about seeing "vsftpd 2.3.4" or "Telnet open" in an asset scan or vulnerability report and immediately knowing how bad that is, without needing to research it in the moment. That's really what I was trying to build here — fast triage judgment, not exploitation skill.
 
-## Next steps for this lab
+## What I want to do next with this lab
 
-- Map each finding to its MITRE ATT&CK technique
-- Practice writing the finding up as a proper vulnerability report (severity, affected asset, remediation) rather than just a raw scan list
-- Extend the lab with a SIEM (Wazuh, already in my lab stack) to practice *detecting* an exploitation attempt against these services, not just finding them
+- Map each of these findings to a MITRE ATT&CK technique
+- Practice writing these up properly as vulnerability reports (severity, affected asset, what to actually do about it) instead of just a scan list
+- Hook up Wazuh (already part of my lab) and try to detect an actual exploitation attempt against these services, not just find them
