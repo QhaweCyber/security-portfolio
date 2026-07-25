@@ -23,4 +23,4 @@ VirtualBox-based lab running Kali Linux and a Windows 10 VM on an isolated NAT N
 ## Contact
 
 - LinkedIn: [ntokozo-mngomeni](https://linkedin.com/in/ntokozo-mngomeni-38b6412b3)
-- GitHub: [QhaweMngomeni](https://github.com/QhaweMngomeni)
+- GitHub: [QhaweCyber](https://github.com/QhaweCyber)
