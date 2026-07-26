@@ -1,84 +1,61 @@
-# Informal Web Security Assessment — Student E-Commerce Site
+# Informal Web Security Check — A Friend's E-Commerce Site
 
 **Author:** Ntokozo Mngomeni — final-year BSc Computer Science student, University of Limpopo. Aspiring SOC analyst.
 
-> **Context:** This isn't professional pentest work — I'm a student building hands-on skills outside the classroom. I'm including this to show how I approach a real target: scoping it properly, reading tool output critically, and adjusting when something doesn't go as expected. Feedback welcome.
-
-## Overview
-
-A lightweight, authorized security review of a small Next.js e-commerce storefront, conducted informally with the site owner's permission as a mutual learning exercise between students. The owner (a fellow student developer) wanted feedback on hardening the site; I wanted hands-on practice applying reconnaissance and assessment techniques to a real, live target.
-
-This write-up focuses as much on **process and reasoning** as on findings — including a couple of dead ends that were themselves useful lessons.
+To be clear upfront: this isn't professional pentest work. I'm a student practicing outside of class, and I'm putting this here because it shows how I actually think through a target — including a couple of dead ends that turned out to be more useful than the actual findings.
 
 **Target:** heavenly-crumbs.vercel.app — a university friend's small scones e-commerce storefront
-**Target type:** Static Next.js storefront, deployed on Vercel
-**Scope:** HTTP header analysis, directory/file enumeration, authentication surface, checkout flow
-**Authorization:** Informal, verbal, granted directly by the site owner/developer
-**Tools used:** `curl`, `gobuster` + SecLists, browser DevTools, manual review
+**Type:** Static Next.js site, hosted on Vercel
+**What I looked at:** HTTP headers, directory/file enumeration, login system (if any), checkout flow
+**Permission:** Verbal, directly from the site owner — he wanted feedback on hardening his site, I wanted practice
+**Tools:** `curl`, `gobuster` + SecLists, browser dev tools, manual poking around
 
 ---
 
-## 1. Scoping the engagement correctly
+## Working out what was actually in scope
 
-Before touching any tooling, the target's hosting model changed what was actually in scope. The site is deployed on **Vercel**, a shared serverless platform — meaning the underlying infrastructure (IP, load balancer, edge network) is Vercel's, not the site owner's. The owner's authorization covers their own application, but cannot extend to Vercel's shared servers.
+Before running anything, I had to think about what "in scope" even meant here. The site's hosted on Vercel, which is shared serverless infrastructure — the actual servers, IPs, and network belong to Vercel, not my friend. His permission covers his own app, not Vercel's infrastructure underneath it.
 
-**Practical consequence:** a full port scan (`nmap -p-`) was ruled out entirely. Vercel serverless deployments don't expose traditional ports anyway (no SSH, no database port) — the entire attack surface lives at the HTTP/application layer. This scoping decision shaped the rest of the assessment.
+So a full port scan (`nmap -p-`) was off the table from the start — and honestly wouldn't have made sense anyway, since Vercel serverless sites don't expose normal ports (no SSH, no database port). Everything worth looking at lives at the HTTP/application layer.
 
-## 2. HTTP header review
+## Checking the HTTP headers
 
 ```
 curl -I https://heavenly-crumbs.vercel.app
 ```
 
-| Header | Status | Note |
-|---|---|---|
-| `strict-transport-security` | ✅ Present | `max-age=63072000; includeSubDomains; preload` — strong config |
-| `content-security-policy` | ❌ Missing | No script-source restrictions |
-| `x-frame-options` | ❌ Missing | Clickjacking not mitigated |
-| `x-content-type-options` | ❌ Missing | MIME-sniffing not blocked |
-| `access-control-allow-origin` | ⚠️ `*` | Fine for a static storefront today; would need scoping down if authenticated APIs are added later |
+`strict-transport-security` was set correctly (`max-age=63072000; includeSubDomains; preload`) — solid config. But `content-security-policy`, `x-frame-options`, and `x-content-type-options` were all missing, so there's no clickjacking protection and no MIME-sniffing protection. `access-control-allow-origin` was set to `*`, which isn't really a problem for a plain storefront with no API, but would need tightening if authenticated endpoints get added later.
 
-Response headers also revealed the tech stack (Next.js App Router, server-rendered via Vercel edge cache) — useful context for the rest of the assessment.
+The response headers also gave away the stack (Next.js App Router, server-rendered through Vercel's edge cache), which was useful context going forward.
 
-## 3. Directory/file enumeration — and a false-positive lesson
+## Directory scanning — and a false-positive I almost missed
 
-Ran `gobuster` against the target using SecLists' common wordlist:
+Ran gobuster against the site with SecLists' common wordlist:
 
 ```
 gobuster dir -u https://heavenly-crumbs.vercel.app -w /usr/share/seclists/Discovery/Web-Content/common.txt
 ```
 
-Initial results looked alarming: **4,750 requests, nearly all returning 403** with near-identical response sizes (~33.8KB), including for obviously nonsensical paths. This is a classic signal that the results are **noise, not findings** — a single blanket response being served for everything, not thousands of real hidden files.
+At first glance the results looked bad — about 4,750 requests, almost all coming back as 403, and all roughly the same size (~33.8KB), even for paths that obviously shouldn't exist. That pattern is usually a red flag that you're not looking at real findings — you're looking at one generic block page being served for everything.
 
-Manually verifying with `curl -Iv` against the flagged `.git/logs/` path confirmed it:
+I checked manually with `curl -Iv` against one of the flagged paths (`.git/logs/`) and got back:
 
 ```
 x-vercel-mitigated: challenge
 ```
 
-Vercel's bot-mitigation system had detected the automated scan and started serving a uniform challenge/block page for all subsequent requests. **The scan itself became the finding** — it confirmed Vercel's edge firewall is active and correctly identifying scripted traffic, which is a positive security signal for the site owner, even though it made further directory enumeration pointless.
+So Vercel's own bot-mitigation system had picked up the scan and started blanket-blocking everything after that. Which is actually a good sign for my friend's site — his firewall is doing its job — but it also meant there was nothing more to find through directory scanning.
 
-**Lesson:** a wall of identical-looking "hits" is a stronger signal of a blocking mechanism than of real exposure. Always spot-check anomalous results manually before treating tool output as ground truth.
+**What I took from this:** a wall of identical-looking "hits" usually means something is blocking you, not that you've found a thousand real files. Worth manually checking anomalies before trusting tool output at face value.
 
-## 4. Authentication and checkout surface
+## Login system and checkout
 
-No login/signup routes exist (`/login`, `/signin`, `/account`, `/auth/login` all returned 404) — this is a purely static storefront with no user accounts. Checkout is handled via a WhatsApp deep link rather than a server-side order/payment flow.
+Tried the obvious routes — `/login`, `/signin`, `/account`, `/auth/login` — all came back 404. So there's no user account system at all; it's a purely static storefront. Checkout happens through a WhatsApp link rather than any real payment flow on the site itself. That means authentication testing (brute-force protection, session cookies, etc.) just doesn't apply here — and I confirmed that by actually testing the routes rather than assuming.
 
-**Consequence for scope:** authentication testing (enumeration, brute-force protection, session cookie flags) does not apply to this site as currently built. This was confirmed rather than assumed, by directly testing the expected routes.
+## What I found, overall
 
-## 5. Summary of findings
+Transport security was solid. A few standard security headers were missing. CORS is loose but not really a problem yet. No exposed directories (scanning got blocked at the platform level before finding anything real). No login system to test. Payment happens off-site through WhatsApp.
 
-| Category | Result |
-|---|---|
-| Transport security | Strong (HSTS configured correctly) |
-| Security headers | Missing CSP, X-Frame-Options, X-Content-Type-Options |
-| CORS | Overly permissive (`*`), non-issue today, worth revisiting if the app grows |
-| Directory exposure | None found; scan blocked by platform-level bot mitigation |
-| Authentication | Not present; not applicable to current scope |
-| Payment handling | Out of scope — occurs off-platform via WhatsApp |
+## What I learned from this
 
-## Takeaways
-
-- Recon on modern platforms (Vercel, Netlify, similar) requires adjusting assumptions from traditional infrastructure pentesting — no ports, but real edge-layer protections to account for.
-- Reading tool output critically (recognizing the gobuster false-positive flood) mattered more here than running more tools.
-- Confirming scope by testing rather than assuming (checking real auth routes instead of guessing) kept the assessment honest and accurate.
+Testing a site hosted on Vercel is not the same as testing a normal server. There's no ports to scan, so most of the work happens at the website level instead — things like headers and how the app responds. I also learned that just running a tool isn't enough — when gobuster gave me a bunch of results, I had to actually check if they were real or just Vercel blocking me. That mattered more than running extra scans. Lastly, instead of just guessing that there was no login page, I actually tested the login links myself to be sure.
