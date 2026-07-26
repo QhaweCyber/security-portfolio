@@ -1,0 +1,59 @@
+Starting sniffer on eth0. Press Ctrl+C to stop.
+
+[TCP] 10.0.0.2 -> 10.0.0.5 | Src Port: 37326 -> Dst Port: 23
+[TCP] 10.0.0.5 -> 10.0.0.2 | Src Port: 23 -> Dst Port: 37326
+    Payload preview: b'metasploitable login: '
+[TCP] 10.0.0.2 -> 10.0.0.5 | Src Port: 37326 -> Dst Port: 23
+    Payload preview: b'm'
+[TCP] 10.0.0.5 -> 10.0.0.2 | Src Port: 23 -> Dst Port: 37326
+    Payload preview: b'm'
+[TCP] 10.0.0.2 -> 10.0.0.5 | Src Port: 37326 -> Dst Port: 23
+    Payload preview: b's'
+[TCP] 10.0.0.5 -> 10.0.0.2 | Src Port: 23 -> Dst Port: 37326
+    Payload preview: b's'
+[TCP] 10.0.0.2 -> 10.0.0.5 | Src Port: 37326 -> Dst Port: 23
+    Payload preview: b'f'
+[TCP] 10.0.0.5 -> 10.0.0.2 | Src Port: 23 -> Dst Port: 37326
+    Payload preview: b'f'
+[TCP] 10.0.0.2 -> 10.0.0.5 | Src Port: 37326 -> Dst Port: 23
+    Payload preview: b'a'
+[TCP] 10.0.0.5 -> 10.0.0.2 | Src Port: 23 -> Dst Port: 37326
+    Payload preview: b'a'
+[TCP] 10.0.0.2 -> 10.0.0.5 | Src Port: 37326 -> Dst Port: 23
+    Payload preview: b'd'
+[TCP] 10.0.0.5 -> 10.0.0.2 | Src Port: 23 -> Dst Port: 37326
+    Payload preview: b'd'
+[TCP] 10.0.0.2 -> 10.0.0.5 | Src Port: 37326 -> Dst Port: 23
+    Payload preview: b'm'
+[TCP] 10.0.0.5 -> 10.0.0.2 | Src Port: 23 -> Dst Port: 37326
+    Payload preview: b'm'
+[TCP] 10.0.0.2 -> 10.0.0.5 | Src Port: 37326 -> Dst Port: 23
+    Payload preview: b'i'
+[TCP] 10.0.0.5 -> 10.0.0.2 | Src Port: 23 -> Dst Port: 37326
+    Payload preview: b'i'
+[TCP] 10.0.0.2 -> 10.0.0.5 | Src Port: 37326 -> Dst Port: 23
+    Payload preview: b'n'
+[TCP] 10.0.0.5 -> 10.0.0.2 | Src Port: 23 -> Dst Port: 37326
+    Payload preview: b'n'
+[TCP] 10.0.0.5 -> 10.0.0.2 | Src Port: 23 -> Dst Port: 37326
+    Payload preview: b'Password: '
+[TCP] 10.0.0.2 -> 10.0.0.5 | Src Port: 37326 -> Dst Port: 23
+    Payload preview: b'm'
+[TCP] 10.0.0.2 -> 10.0.0.5 | Src Port: 37326 -> Dst Port: 23
+    Payload preview: b's'
+[TCP] 10.0.0.2 -> 10.0.0.5 | Src Port: 37326 -> Dst Port: 23
+    Payload preview: b'f'
+[TCP] 10.0.0.2 -> 10.0.0.5 | Src Port: 37326 -> Dst Port: 23
+    Payload preview: b'a'
+[TCP] 10.0.0.2 -> 10.0.0.5 | Src Port: 37326 -> Dst Port: 23
+    Payload preview: b'd'
+[TCP] 10.0.0.2 -> 10.0.0.5 | Src Port: 37326 -> Dst Port: 23
+    Payload preview: b'm'
+[TCP] 10.0.0.2 -> 10.0.0.5 | Src Port: 37326 -> Dst Port: 23
+    Payload preview: b'i'
+[TCP] 10.0.0.2 -> 10.0.0.5 | Src Port: 37326 -> Dst Port: 23
+    Payload preview: b'n'
+[TCP] 10.0.0.5 -> 10.0.0.2 | Src Port: 23 -> Dst Port: 37326
+    Payload preview: b'Last login: Sun Jul 26 04:40:08 EDT 2026 on tty1\r\n'
+[TCP] 10.0.0.5 -> 10.0.0.2 | Src Port: 23 -> Dst Port: 37326
+    Payload preview: b'msfadmin@metasploitable:~$ '
